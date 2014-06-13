@@ -58,6 +58,8 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
     private $seleniumServerUrl;
     private $seleniumServerRequestsTimeout;
 
+    private $curlHandle;
+
     public function __construct(PHPUnit_Extensions_Selenium2TestCase_URL $seleniumServerUrl, $timeout = 60)
     {
         $this->seleniumServerUrl = $seleniumServerUrl;
@@ -85,6 +87,14 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
         );
     }
 
+    protected function curlHandle()
+    {
+        if (!isset($this->curlHandle)) {
+            $this->curlHandle = curl_init();
+        }
+        return $this->curlHandle;
+    }
+
     /**
      * Performs an HTTP request to the Selenium 2 server.
      *
@@ -96,7 +106,8 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
                          PHPUnit_Extensions_Selenium2TestCase_URL $url,
                          $params = NULL)
     {
-        $curl = curl_init($url->getValue());
+        $curl = $this->curlHandle();
+        curl_setopt($curl, CURLOPT_URL, $url->getValue());
         curl_setopt($curl, CURLOPT_TIMEOUT, $this->seleniumServerRequestsTimeout);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($curl,
@@ -105,6 +116,9 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
                         'Content-type: application/json;charset=UTF-8',
                         'Accept: application/json;charset=UTF-8'
                      ));
+
+        // For each new request, reset request method to HTTP GET.
+        curl_setopt($curl, CURLOPT_HTTPGET, TRUE);
 
         if ($http_method === 'POST') {
             curl_setopt($curl, CURLOPT_POST, TRUE);
@@ -132,7 +146,6 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
         if ($info['http_code'] == 404) {
             throw new BadMethodCallException("The command $url is not recognized by the server.");
         }
-        curl_close($curl);
         $content = json_decode($rawResponse, TRUE);
         if ($info['http_code'] == 500) {
             $message = '';
@@ -154,5 +167,10 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
         return $this->curl($command->httpMethod(),
                            $command->url(),
                            $command->jsonParameters());
+    }
+
+    public function __destroy()
+    {
+        curl_close($this->curlHandle);
     }
 }
