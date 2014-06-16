@@ -118,6 +118,7 @@ class PHPUnit_Extensions_Selenium2TestCase_Driver
                      ));
 
         // For each new request, reset request method to HTTP GET.
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $http_method);
         curl_setopt($curl, CURLOPT_HTTPGET, TRUE);
 
         if ($http_method === 'POST') {
