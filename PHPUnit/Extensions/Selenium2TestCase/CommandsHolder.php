@@ -154,4 +154,17 @@ abstract class PHPUnit_Extensions_Selenium2TestCase_CommandsHolder
         }
         throw new BadMethodCallException("The command '$commandName' is not existent or not supported yet.");
     }
+
+    /**
+     * Magic __sleep() called on serialization.
+     *
+     * The $commands member variable contains closures which can not be
+     * serialized, so exclude it.
+     */
+    public function __sleep() {
+        return array(
+            'url',
+            'driver',
+        );
+    }
 }
